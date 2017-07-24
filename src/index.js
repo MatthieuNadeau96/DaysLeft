@@ -49,30 +49,48 @@ var handlers = {
     console.log(JSON.stringify(filledSlots));
     var speechOutput = randomPhrase(DaysLeftIntro);
 
-    var dateOfBirth=filledSlots.slots.dateOfBirth.value
+      var dateOfBirth=filledSlots.slots.dateOfBirth.value;
       this.attributes['dateOfBirth'] = dateOfBirth;
-      // this.attributes["dateOfBirth"];
+
       var weight=filledSlots.slots.weight.value;
       this.attributes['weight'] = weight;
-      // this.attributes["weight"];
+
       var exercise=filledSlots.slots.exercise.value;
       this.attributes['exercise'] = exercise;
-      // this.attributes["exercise"];
+
       var smoke=filledSlots.slots.smoke.value;
       this.attributes['smoke'] = smoke;
-      // this.attributes["smoke"];
+
       var drivingAccident=filledSlots.slots.drivingAccident.value;
       this.attributes['drivingAccident'] = drivingAccident;
-      // this.attributes["drivingAccident"];
+
       var drivingDUI=filledSlots.slots.drivingDUI.value;
       this.attributes['drivingDUI'] = drivingDUI;
-      // this.attributes["drivingDUI"];
+
+      var alcohol=filledSlots.slots.alcohol.value;
+      this.attributes['alcohol'] = alcohol;
+
+      var stress=filledSlots.slots.stress.value;
+      this.attributes['stress'] = stress;
+
+      var height=filledSlots.slots.height.value;
+      this.attributes['height'] = height;
 
 
       speechOutput += "You were born on " + dateOfBirth;
       speechOutput +=", you weigh " + weight + " pounds";
+      speechOutput +=", you are about " + height + " inches tall";
       speechOutput +=", you exercise for about " + exercise + " hours per week";
+      speechOutput +=", on average you drink about " + alcohol + "alcoholic beverages a week";
 
+                        // stress condition
+      if (stress == '3' || '2' || '1') {
+        speechOutput += ', you deal with stress pretty well';
+      } else if (stress == '6' || '7' || '8' || '9' || '10') {
+        speechOutput += ", you don't do that well with stress";
+      } else {
+        speechOutput += ", you handle stress very well";
+      };
                         // car accident condition
       if (drivingAccident == "none" || "I've never been in an accident" || "I've never been in a car accidnt" || 0) {
         speechOutput += ", you haven't been in any car accidents in the past three years";
