@@ -73,15 +73,7 @@ var handlers = {
       var currentDate = today.getFullYear() + '-'
       + (today.getMonth()+1) + '-' + today.getDate();
       var age = parseInt(currentDate) - parseInt(dateOfBirth);
-      var averageYearsLeft = (yearsLeft) + (Math.round((79 - age)/365));
-      var daysLeft = (averageYearsLeft*365);
-
       var bodyMassIndex = (parseInt(weight)*703)/(parseInt(height)*parseInt(height));
-      console.log("BMI = " + bodyMassIndex);
-      console.log("AVERAGE YEARS LEFT: " + averageYearsLeft);
-      console.log("APPROXIMATE DAYS LEFT: " + daysLeft);
-      speechOutput += "You have " + averageYearsLeft + "years left to live. And "
-      speechOutput += "Well, you aren't going to like this. But you have " + daysLeft + " days left to live."
 
       // averageYearsLeft =(79-((C16-B3)/365))
       // TOTALYEARSLEFT =(C13+C12+C11+C10+C8+C9+C7+C3)
@@ -89,65 +81,75 @@ var handlers = {
 
 ///////////////////////////////////////////////////////
       //
-      //                     // exercise condition
-      //
-      // if(parseInt(exercise) >= 2 && parseInt(exercise) <= 6) {
-      //   yearsLeft += 3;
-      // } else if (parseInt(exercise) >= 7) {
-      //   yearsLeft += 5;
-      // } else if (parseInt(exercise) == 1){
-      //   yearsLeft += 1;
-      // } else {
-      //   yearsLeft += 0;
-      // };
-      //                     // stress condition
-      // if(parseInt(stress) <= 4) {
-      //   yearsLeft += 1;
-      // } else if (parseInt(stress) >= 6 && parseInt(stress) <= 10) {
-      //   yearsLeft -= 1;
-      // } else if (parseInt(stress) == 5) {
-      //   yearsLeft += 0;
-      // };
-      //
-      // // ALCOHOL =IF(B10="A","1",IF(B10="B","0",IF(B10="C","-3",IF(B10="D","-4"))))
-      // // I think I need to rethink the question for alcohol intake
-      //
-      //                     //smoking condition
-      // if(parseInt(smoke) == 0) {
-      //   yearsLeft += 2;
-      // } else if(parseInt(smoke) >= 2) {
-      //   yearsLeft -= 8;
-      // } else {
-      //   yearsLeft -= 4;
-      // };
-      //
-      //                     //accident condition
-      // if(parseInt(drivingAccident) >= 4) {
-      //   yearsLeft -= 4;
-      // } else if(parseInt(drivingAccident) >= 1) {
-      //   yearsLeft += 0;
-      // } else {
-      //   yearsLeft += 1;
-      // };
-      //                     // DUI condition
-      // if(parseInt(drivingDUI) == 1) {
-      //   yearsLeft -= 6;
-      // } else if (parseInt(drivingDUI) > 1) {
-      //   yearsLeft -= 12;
-      // } else {
-      //   yearsLeft += 1;
-      // };
-      //
-      //
-      // if(bodyMassIndex <= 18.5) {
-      //   yearsLeft -=1;
-      // } else if(bodyMassIndex <= 29) {
-      //   yearsLeft += 0;
-      // } else if(bodyMassIndex <= 39) {
-      //   yearsLeft -= 3;
-      // } else {
-      //   yearsLeft -= 10;
-      // };
+                          // exercise condition
+
+      if(parseInt(exercise) >= 2 && parseInt(exercise) <= 6) {
+        yearsLeft += 3;
+      } else if (parseInt(exercise) >= 7) {
+        yearsLeft += 5;
+      } else if (parseInt(exercise) == 1){
+        yearsLeft += 1;
+      } else {
+        yearsLeft += 0;
+      };
+                          // stress condition
+      if(parseInt(stress) <= 4) {
+        yearsLeft += 1;
+      } else if (parseInt(stress) >= 6 && parseInt(stress) <= 10) {
+        yearsLeft -= 1;
+      } else if (parseInt(stress) == 5) {
+        yearsLeft += 0;
+      };
+
+      // ALCOHOL =IF(B10="A","1",IF(B10="B","0",IF(B10="C","-3",IF(B10="D","-4"))))
+      // I think I need to rethink the question for alcohol intake
+
+                          //smoking condition
+      if(parseInt(smoke) == 0) {
+        yearsLeft += 2;
+      } else if(parseInt(smoke) >= 2) {
+        yearsLeft -= 8;
+      } else {
+        yearsLeft -= 4;
+      };
+
+                          //accident condition
+      if(parseInt(drivingAccident) >= 4) {
+        yearsLeft -= 4;
+      } else if(parseInt(drivingAccident) >= 1) {
+        yearsLeft += 0;
+      } else {
+        yearsLeft += 1;
+      };
+                          // DUI condition
+      if(parseInt(drivingDUI) == 1) {
+        yearsLeft -= 6;
+      } else if (parseInt(drivingDUI) > 1) {
+        yearsLeft -= 12;
+      } else {
+        yearsLeft += 1;
+      };
+
+
+      if(bodyMassIndex <= 18.5) {
+        yearsLeft -=1;
+      } else if(bodyMassIndex <= 29) {
+        yearsLeft += 0;
+      } else if(bodyMassIndex <= 39) {
+        yearsLeft -= 3;
+      } else {
+        yearsLeft -= 10;
+      };
+      //////////////////////////////////////////////////////////
+      var averageYearsLeft = (yearsLeft) + (Math.round((79 - age)));
+      var daysLeft = (averageYearsLeft*365);
+      console.log("BMI = " + bodyMassIndex);
+      console.log("AVERAGE YEARS LEFT: " + averageYearsLeft);
+      console.log("APPROXIMATE DAYS LEFT: " + daysLeft);
+      speechOutput += "You have " + averageYearsLeft + "years left to live. And "
+      speechOutput += "you have " + daysLeft + " days left to live."
+
+
 
       // if (stress == '3' || '2' || '1') {
       //   speechOutput += ', you deal with stress pretty well';
@@ -156,24 +158,26 @@ var handlers = {
       // } else {
       //   speechOutput += ", you handle stress very well";
       // };
-                        // car accident condition
+      //                   car accident condition
       // if (drivingAccident == "none" || "I've never been in an accident" || "I've never been in a car accidnt" || 0) {
       //   speechOutput += ", you haven't been in any car accidents in the past three years";
       // } else {
       //   speechOutput += ", you've been in " + drivingAccident + " car accidents in the past three years";
       // };
-                        // DUI condition
+      //                   DUI condition
       // if (drivingDUI == "none" || "I never drive under the influence" || 0) {
       //   speechOutput += ", you haven't had any DUI's";
       // } else {
       //   speechOutput += ", you've had " + drivingDUI + " DUI's";
       // };
-                        //smoking condition
+      //                   smoking condition
       // if (smoke == 'none' || "I don't smoke" || 0) {
       //   speechOutput += ", and you don't smoke";
       // } else {
       //   speechOutput += ", and you smoke " + smoke + " packs a day";
       // };
+
+
       // speechOutput += ". You're still a loser though. And judging by your voice you sound like you don't have any friends at all."
       this.emit(":tell", speechOutput);
     },
