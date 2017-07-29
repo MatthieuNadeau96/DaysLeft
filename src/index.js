@@ -38,11 +38,11 @@ var DaysLeftIntro = [
 // };
 var handlers = {
   'LaunchRequest': function() {
-    // if(Object.keys(this.attributes).length === 0) {
-    //   this.attributes['endedSessionCount'] = 0;
-    //   this.attributes['gamesPlayed'] = 0;
-    // }
-    this.emit(':ask', welcomeOutput);
+    if(this.attributes['daysLeft'] != undefined) {
+      this.emit(":tell", "Yay! Yay, welcome back, you have " + this.attributes['daysLeft'] + " days left to live on planet earth.");
+    } else {
+      this.emit(':ask', welcomeOutput);
+    };
   },
   'DaysLeftIntent': function() {
     var filledSlots = delegateSlotCollection.call(this);
@@ -143,6 +143,8 @@ var handlers = {
       //////////////////////////////////////////////////////////
       var averageYearsLeft = (yearsLeft) + (Math.round((79 - age)));
       var daysLeft = (averageYearsLeft*365);
+      this.attributes["daysLeft"] = daysLeft.toString();
+      this.attributes["averageYearsLeft"] = averageYearsLeft.toString();
       console.log("BMI = " + bodyMassIndex);
       console.log("AVERAGE YEARS LEFT: " + averageYearsLeft);
       console.log("APPROXIMATE DAYS LEFT: " + daysLeft);
