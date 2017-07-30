@@ -39,7 +39,7 @@ var DaysLeftIntro = [
 var handlers = {
   'LaunchRequest': function() {
     if(this.attributes['daysLeft'] != undefined) {
-      this.emit(":tell", "Yay! Yay, welcome back, you have " + this.attributes['daysLeft'] + " days left to live on planet earth.");
+      this.emit(":tell", "Welcome back, you have " + this.attributes['daysLeft'] + " days left to live on planet earth.");
     } else {
       this.emit(':ask', welcomeOutput);
     };
@@ -67,6 +67,12 @@ var handlers = {
       this.attributes['stress'] = stress;
       var height=filledSlots.slots.height.value;
       this.attributes['height'] = height;
+      var sleep=filledSlots.slots.sleep.value;
+      this.attributes['sleep'] = sleep;
+      var fastfood=filledSlots.slots.fastfood.value;
+      this.attributes['fastfood'] = fastfood;
+      var doctorvisits=filledSlots.slots.doctorvisits.value;
+      this.attributes['doctorvisits'] = doctorvisits;
 
       var yearsLeft = 0;
       var today = new Date();
@@ -105,7 +111,7 @@ var handlers = {
       // I think I need to rethink the question for alcohol intake
 
                           //smoking condition
-      if(parseInt(smoke) == 0) {
+      if(parseInt(smoke) == 0 || smoke == "none" || smoke == "i don't smoke") {
         yearsLeft += 2;
       } else if(parseInt(smoke) >= 2) {
         yearsLeft -= 8;
@@ -130,7 +136,7 @@ var handlers = {
         yearsLeft += 1;
       };
 
-
+                          // BMI condition
       if(bodyMassIndex <= 18.5) {
         yearsLeft -=1;
       } else if(bodyMassIndex <= 29) {
@@ -140,6 +146,35 @@ var handlers = {
       } else {
         yearsLeft -= 10;
       };
+
+
+      if(parseInt(sleep) == 7) {
+        yearsLeft += 1;
+      } else if(parseInt(sleep) >= 8) {
+        yearsLeft += 2;
+      } else if (parseInt(sleep) >= 5){
+        yearsLeft -= 1;
+      } else {
+        yearsLeft -= 1;
+        speechOutput += " you should really get some more sleep. ";
+      };
+
+      if(parseInt(fastfood) > 3) {
+        yearsLeft -= 2;
+      } else if (parseInt(fastfood) <= 3 && parseInt(fastfood) > 0) {
+        yearsLeft -= 1;
+      } else {
+        yearsLeft += 1;
+      };
+
+      if(parseInt(doctorvisits) == 1 || doctorvisits == "only when i need to") {
+        yearsLeft += 1;
+      } else if (parseInt(doctorvisits) >= 2) {
+        yearsLeft += 2;
+      } else {
+        yearsLeft -= 1;
+      };
+
       //////////////////////////////////////////////////////////
       var averageYearsLeft = (yearsLeft) + (Math.round((79 - age)));
       var daysLeft = (averageYearsLeft*365);
@@ -150,6 +185,7 @@ var handlers = {
       console.log("APPROXIMATE DAYS LEFT: " + daysLeft);
       speechOutput += "You have " + averageYearsLeft + "years left to live. And "
       speechOutput += "you have " + daysLeft + " days left to live."
+      speechOutput += " Come back again tomorrow if you'd like to hear a tip on how you can increase your days left on earth. "
 
 
 
