@@ -12,7 +12,7 @@ exports.handler = function(event, context, callback) {
 var speechOutput;
 var welcomeOutput = "Hello, I am going to begin by asking you a few questions about yourself to calculate how many days you have left to live. "
 + "Tell me to begin when you are ready. ";
-var reprompt;
+var reprompt = "Just tell me when you're ready to begin. ";
 var DaysLeftIntro = [
   "Okay. ",
   "Great. ",
@@ -38,10 +38,10 @@ var DaysLeftIntro = [
 // };
 var handlers = {
   'LaunchRequest': function() {
-    if(this.attributes['daysLeft'] != undefined) {
+    if(this.attributes['daysLeft'] !== undefined) {
       this.emit(":tell", "Welcome back, you have " + this.attributes['daysLeft'] + " days left to live on planet earth.");
-    } else {
-      this.emit(':ask', welcomeOutput);
+    } else if (this.attributes['daysLeft'] == undefined){
+      this.emit(':ask', welcomeOutput, reprompt);
     };
   },
   'DaysLeftIntent': function() {
@@ -156,7 +156,6 @@ var handlers = {
         yearsLeft -= 1;
       } else {
         yearsLeft -= 1;
-        speechOutput += " you should really get some more sleep. ";
       };
 
       if(parseInt(fastfood) > 3) {
