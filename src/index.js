@@ -1,5 +1,7 @@
 'use strict';
 var Alexa = require("alexa-sdk");
+var ua = require('universal-analytics');
+var googleUA = 'UA-104151044-2'; //tracking ID
 
 exports.handler = function(event, context, callback) {
   var alexa = Alexa.handler(event, context);
@@ -38,6 +40,13 @@ var DaysLeftIntro = [
 // };
 var handlers = {
   'LaunchRequest': function() {
+
+    // Make sure this is a locally-scoped var within each intent function.
+    var intentTrackingID = ua(googleUA, {https: true});
+
+    // report a success
+    intentTrackingID.pageview("/").send()
+
     if(this.attributes['daysLeft'] !== undefined) {
       this.emit(":tell", "Welcome back, you have " + this.attributes['daysLeft'] + " days left to live on planet earth.");
     } else if (this.attributes['daysLeft'] == undefined){
@@ -45,6 +54,7 @@ var handlers = {
     };
   },
   'DaysLeftIntent': function() {
+
     var filledSlots = delegateSlotCollection.call(this);
     console.log(JSON.stringify(filledSlots));
     var speechOutput = randomPhrase(DaysLeftIntro);
