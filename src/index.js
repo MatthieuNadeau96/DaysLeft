@@ -1,5 +1,6 @@
 'use strict';
 var Alexa = require("alexa-sdk");
+var AWS = require('aws-sdk');
 var ua = require('universal-analytics');
 var googleUA = 'UA-104151044-2'; //tracking ID
 
@@ -10,6 +11,61 @@ exports.handler = function(event, context, callback) {
   alexa.registerHandlers(handlers);
   alexa.execute();
 };
+                        // query dynamodb table tips
+
+// function readDynamoItem(params, callback) {
+//
+// var AWS = require('aws-sdk');
+// var docClient = new AWS.DynamoDb.DocumentClient({region: 'us-east-1'});
+//
+// console.log('reading item from DynamoDB table');
+//
+// docClient.get(params, (err, data) => {
+//  if(err) {
+//    console.error("Unable to read item. Error JSON:", JSON.stringify(err,null,2));
+//  } else {
+//    console.log("GetItem succeeded:", JSON.stringify(data, null, 2));
+//
+//    callback(data.Item.message);
+//
+//  }
+// });
+//}
+AWS.config.update({
+  region: "us-east-1"
+  // endpoint: "http://localhost:8000"
+  // accessKeyId: "",
+  //secretAccessKey: ""
+});
+
+var docClient = new AWS.DynamoDB.DocumentClient();
+
+function readItem(obj, callback) {
+  var table = "Tips";
+  var id = "1";
+  var params = {
+    TableName: table,
+    Key:{
+      "Id": id
+    }
+    // console.log("PARAMS: " + params);
+  };
+  docClient.get(params, function(err, data) {
+    if(err) {
+      console.error("Unable to read item. Error JSON:", JSON.stringify(err, null, 2));
+    } else {
+      console.log("GetItem succeeded:", JSON.stringify(data, null, 2));
+      callback(obj, data['Item']['tip']);
+      // callback(data.Item.tip);  // this particular row has an attribute called message
+    }
+  });
+  // console.log("IDK: " + docClient.get(params, function(err, data)));
+}
+
+// var params = {
+//   TableName: 'Tips',
+//   Key:{ "Id": 1 }
+// };
 
 var speechOutput;
 var welcomeOutput = "Hello, I am going to begin by asking you a few questions about yourself to calculate how many days you have left to live. "
@@ -25,6 +81,21 @@ var DaysLeftIntro = [
   "Splendid! "
 ];
 
+// var tip = [
+//   "Walking thirty minutes a day will add about two point two years to your life. That's an extra nine hundred and three more days! ",
+//   "Getting a full one hundred minutes of movement a day will give you about five point six more years on earth. That's another two thousand days! ",
+//   "If you just go to bed 15 minutes earlier than you normally do, you'll add an extra three years to your life. That's about one thousand and ninety five days! ",
+//   "If you eat a more healthy diet you can add up to fourteen years onto your life! That's five thousand one hundred and ten more days on planet earth. ",
+//   "Smoking is extremely bad for you. I'm sure you already know that. If you quit smoking you can add from anywhere between six to twelve years to your life. That's somewhere between two thousand and four thousand days! ",
+//   "Frequent sex will add about three more years to your life. That's another one thousand and ninety five days. ",
+//   "Don't use too much sugar. A high sugar diet boosts blood sugar, which is bad for your heart by increasing levels of LDL cholesterol and tripling your risk for fatal cardiovascular disease. ",
+//   "You should consider extra vitamin D. Vitamin D is a byproduct of sunlight and has many healthy benefits. Though, too much is just as bad as too little. You should ask your doctor if you would benefit from extra D in pill form. ",
+//   "If you've been looking to kick your coffee habit, green tea is a great solution. Green tea contains powerful antioxidants known as catechins. In a large study of more than forty thousand men and woman, drinking five or more cups of green tea a day was associated with a twelve percent decrease in mortality among men and a twenty three degrease among woman. ",
+//   "Eating three or more servings of whole grains each day can cut your overall death rate by about twenty percent. ",
+//   "Drink more water! Staying adequately hydrated can prolong a healthy life by reducing the risk of bladder and colon cancer and keeping your kidneys in great shape. It might also be helpful in eating less and losing weight. ",
+//   "People who drink three to five cups of coffee per day had a fifteen percent lower risk of mortality compared to people who didn't drink coffee. Coffee reduces your risk of stroke, diabetes and some cancers. "
+// // ];
+
 // var states = {
 //     GUESSMODE: '_GUESSMODE', // User is trying to guess the number.
 //     STARTMODE: '_STARTMODE'  // Prompt the user to start or restart the game.
@@ -38,6 +109,7 @@ var DaysLeftIntro = [
 //         }
 //       }
 // };
+
 var handlers = {
   'LaunchRequest': function() {
 
@@ -48,12 +120,18 @@ var handlers = {
     intentTrackingID.pageview("/").send()
 
     if(this.attributes['daysLeft'] !== undefined) {
-      this.emit(":tell", "Welcome back, you have " + this.attributes['daysLeft'] + " days left to live on planet earth.");
+    readItem(this, function(obj, data) {
+      console.log(data);
+
+      obj.emit(":tell", "Welcome back, you have " + obj.attributes['daysLeft'] + " days left to live." +
+        " Here is a tip to help you live a longer and healthier life. " + data);
+    });
     } else if (this.attributes['daysLeft'] == undefined){
       this.emit(':ask', welcomeOutput, reprompt);
     };
   },
   'DaysLeftIntent': function() {
+
 
     var filledSlots = delegateSlotCollection.call(this);
     console.log(JSON.stringify(filledSlots));
@@ -97,7 +175,7 @@ var handlers = {
 
 ///////////////////////////////////////////////////////
       //
-                          // exercise condition
+                        // exercise condition
 
       if(parseInt(exercise) >= 2 && parseInt(exercise) <= 6) {
         yearsLeft += 3;
@@ -193,8 +271,27 @@ var handlers = {
       console.log("AVERAGE YEARS LEFT: " + averageYearsLeft);
       console.log("APPROXIMATE DAYS LEFT: " + daysLeft);
       speechOutput += "You have " + averageYearsLeft + "years left to live. And "
-      speechOutput += "you have " + daysLeft + " days left to live."
-      speechOutput += " Come back again tomorrow if you'd like to hear a tip on how you can increase your days left on earth. "
+      speechOutput += "you have " + daysLeft + " days left to live. "
+      speechOutput += "Now I will tell you a tip on how to increase your life expectancy. "
+      readItem(this, function(obj, data) {
+        console.log(data);
+
+        obj.emit(":tell", speechOutput += data);
+      });
+      //speechOutput += readItem();
+      //console.log("ADITEM: " + readItem());
+
+      // readDynamoItem(params, tip=>{
+      //   var say = '';
+      //
+      //   say = tip;
+      //
+      //   say = ' Your tip is, ' + tip + ". ";
+      //
+      //   this.emit(':tell', say);
+      //
+      // });
+      // speechOutput += randomPhrase(tip);
 
 
 
@@ -226,7 +323,7 @@ var handlers = {
 
 
       // speechOutput += ". You're still a loser though. And judging by your voice you sound like you don't have any friends at all."
-      this.emit(":tell", speechOutput);
+      //this.emit(":tell", speechOutput);
     },
     "AMAZON.HelpIntent": function() {
       this.emit(':tell', reprompt);
@@ -245,7 +342,9 @@ var handlers = {
       this.emit(":tell", "Goodbye");
     }
 };
-  function delegateSlotCollection(){
+
+
+function delegateSlotCollection(){
     console.log("in delegateSlotCollection");
     console.log("current dialogState: "+this.event.request.dialogState);
       if (this.event.request.dialogState === "STARTED") {
