@@ -16,6 +16,7 @@ AWS.config.update({
 });
 
 var docClient = new AWS.DynamoDB.DocumentClient();
+var tipsHeard = [];
 
 function readItem(obj, callback) {
   var table = "Tips";
@@ -31,7 +32,7 @@ function readItem(obj, callback) {
       console.error("Unable to read item. Error JSON:", JSON.stringify(err, null, 2));
     } else {
       console.log("GetItem succeeded:", JSON.stringify(data, null, 2));
-      callback(obj, data['Item']['tip']);
+      callback(obj, data['Item']);
     }
   });
 }
@@ -57,14 +58,19 @@ var handlers = {
     var intentTrackingID = ua(googleUA, {https: true});
 
     // report a success
-    intentTrackingID.pageview("/").send()
+    intentTrackingID.pageview("/").send();
 
     if(this.attributes['daysLeft'] !== undefined) {
-    readItem(this, function(obj, data) {
+      tipsHeard = this.attributes["tipsHeard"];
+      readItem(this, function(obj, data) {
       console.log(data);
 
+
+      tipsHeard.push(data['Id']);
+      obj.attributes['tipsHeard'] = tipsHeard;
+
       obj.emit(":tell", "Welcome back, you have " + obj.attributes['daysLeft'] + " days left to live." +
-        " Here is a tip to help you live a longer and healthier life. " + data);
+        " Here is a tip to help you live a longer and healthier life. " + data['tip']);
     });
     } else if (this.attributes['daysLeft'] == undefined){
       this.emit(':ask', welcomeOutput, reprompt);
@@ -196,6 +202,9 @@ var handlers = {
       //////////////////////////////////////////////////////////
       var averageYearsLeft = (yearsLeft) + (Math.round((79 - age)));
       var daysLeft = (averageYearsLeft*365);
+      if(this.attributes['tipsHeard'] !== undefined) {
+        tipsHeard = this.attributes["tipsHeard"];
+      }
       this.attributes["daysLeft"] = daysLeft.toString();
       this.attributes["averageYearsLeft"] = averageYearsLeft.toString();
       console.log("BMI = " + bodyMassIndex);
@@ -206,8 +215,9 @@ var handlers = {
       speechOutput += "Now I will tell you a tip on how to increase your life expectancy. "
       readItem(this, function(obj, data) {
         console.log(data);
-
-        obj.emit(":tell", speechOutput += data);
+        tipsHeard.push(data['Id'])
+        this.attributes["tipsHeard"] = tipsHeard;
+        obj.emit(":tell", speechOutput += data['tip']);
       });
     },
     "AMAZON.HelpIntent": function() {
