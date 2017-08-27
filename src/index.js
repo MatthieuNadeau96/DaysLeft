@@ -16,11 +16,12 @@ AWS.config.update({
 });
 
 var docClient = new AWS.DynamoDB.DocumentClient();
+var totalTips = 12;
 var tipsHeard = [];
 
-function readItem(obj, callback) {
+function readItem(obj, pastTips, callback) {
   var table = "Tips";
-  var id = getRandomTip(1, 12).toString();
+  var id = getRandomTipWithExclusions(totalTips, tipsHeard).toString();
   var params = {
     TableName: table,
     Key:{
@@ -32,6 +33,7 @@ function readItem(obj, callback) {
       console.error("Unable to read item. Error JSON:", JSON.stringify(err, null, 2));
     } else {
       console.log("GetItem succeeded:", JSON.stringify(data, null, 2));
+      //
       callback(obj, data['Item']);
     }
   });
@@ -62,9 +64,11 @@ var handlers = {
 
     if(this.attributes['daysLeft'] !== undefined) {
       tipsHeard = this.attributes["tipsHeard"];
-      readItem(this, function(obj, data) {
+      if (tipsHeard === undefined) {
+        tipsHeard = [];
+      }
+      readItem(this, tipsHeard, function(obj, data) {
       console.log(data);
-
 
       tipsHeard.push(data['Id']);
       obj.attributes['tipsHeard'] = tipsHeard;
@@ -204,21 +208,27 @@ var handlers = {
       var daysLeft = (averageYearsLeft*365);
       if(this.attributes['tipsHeard'] !== undefined) {
         tipsHeard = this.attributes["tipsHeard"];
+        if (tipsHeard === undefined) {
+          tipsHeard = [];
+        }
       }
       this.attributes["daysLeft"] = daysLeft.toString();
       this.attributes["averageYearsLeft"] = averageYearsLeft.toString();
       console.log("BMI = " + bodyMassIndex);
       console.log("AVERAGE YEARS LEFT: " + averageYearsLeft);
       console.log("APPROXIMATE DAYS LEFT: " + daysLeft);
+      console.log(tipsHeard);
       speechOutput += "You have " + averageYearsLeft + "years left to live. And "
       speechOutput += "you have " + daysLeft + " days left to live. "
       speechOutput += "Now I will tell you a tip on how to increase your life expectancy. "
-      readItem(this, function(obj, data) {
-        console.log(data);
-        tipsHeard.push(data['Id'])
-        this.attributes["tipsHeard"] = tipsHeard;
+      readItem(this, tipsHeard, function(obj, data) {
+        console.log("in read item = " + tipsHeard);
+        tipsHeard.push(data['Id']);
+        obj.attributes["tipsHeard"] = tipsHeard;
         obj.emit(":tell", speechOutput += data['tip']);
+        console.log("at the end of read item = " + tipsHeard);
       });
+      console.log("tipsHeard after: " + tipsHeard);
     },
     "AMAZON.HelpIntent": function() {
       this.emit(':tell', reprompt);
@@ -268,8 +278,13 @@ function randomPhrase(array) {
   return(array[i]);
 }
 
-function getRandomTip(min, max) {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
+function getRandomTipWithExclusions (lengthOfArray, arrayOfIndexesToExclude) {
+  var rand = null;
+
+  while (rand === null || arrayOfIndexesToExclude.toString().includes(rand)) {
+    rand = Math.round(Math.random() * (lengthOfArray - 1));
+  }
+  return rand;
 }
 
 function isSlotValid(request, slotName){
