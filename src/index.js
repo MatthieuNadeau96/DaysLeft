@@ -16,28 +16,8 @@ AWS.config.update({
 });
 
 var docClient = new AWS.DynamoDB.DocumentClient();
-var totalTips = 12;
+var totalTips = process.env.TOTAL_TIP_COUNT;
 var tipsHeard = [];
-
-function readItem(obj, pastTips, callback) {
-  var table = "Tips";
-  var id = getRandomTipWithExclusions(totalTips, tipsHeard).toString();
-  var params = {
-    TableName: table,
-    Key:{
-      "Id": id
-    }
-  };
-  docClient.get(params, function(err, data) {
-    if(err) {
-      console.error("Unable to read item. Error JSON:", JSON.stringify(err, null, 2));
-    } else {
-      console.log("GetItem succeeded:", JSON.stringify(data, null, 2));
-      //
-      callback(obj, data['Item']);
-    }
-  });
-}
 
 var speechOutput;
 var welcomeOutput = "Hello, I am going to begin by asking you a few questions about yourself to calculate how many days you have left to live. "
@@ -68,14 +48,17 @@ var handlers = {
         tipsHeard = [];
       }
       readItem(this, tipsHeard, function(obj, data) {
-      console.log(data);
+        if(process.env.debugFlag){console.log(data)};
 
-      tipsHeard.push(data['Id']);
-      obj.attributes['tipsHeard'] = tipsHeard;
+        tipsHeard.push(data['Id']);
+        obj.attributes['tipsHeard'] = tipsHeard;
 
-      obj.emit(":tell", "Welcome back, you have " + obj.attributes['daysLeft'] + " days left to live." +
-        " Here is a tip to help you live a longer and healthier life. " + data['tip']);
-    });
+        obj.emit(":tell", "Welcome back, you have " + obj.attributes['daysLeft'] + " days left to live." +
+          " Here is a tip to help you live a longer and healthier life. " + data['tip']);
+
+        if(process.env.debugFlag){console.log("Tips so far: " + tipsHeard)};
+        if(process.env.debugFlag){console.log("TOTAL TIPS HEARD: " + tipsHeard.length)};
+      });
     } else if (this.attributes['daysLeft'] == undefined){
       this.emit(':ask', welcomeOutput, reprompt);
     };
@@ -157,7 +140,7 @@ var handlers = {
         yearsLeft += 1;
       };
                           // DUI condition
-      if(parseInt(drivingDUI) == 1) {
+      if(parseInt(drivingDUI) == 1 || 'once') {
         yearsLeft -= 6;
       } else if (parseInt(drivingDUI) > 1) {
         yearsLeft -= 12;
@@ -195,6 +178,17 @@ var handlers = {
         yearsLeft += 1;
       };
 
+                          //alcohol condition
+      if(parseInt(alcohol) == 0) {
+        yearsLeft += 1;
+      } else if(parseInt(alcohol) <= 4) {
+        yearsLeft += 0;
+      } else if(parseInt(alcohol) <= 6){
+        yearsLeft -= 3;
+      } else if(parseInt(alcohol) >= 7){
+        yearsLeft -= 8;
+      }
+
       if(parseInt(doctorvisits) == 1 || doctorvisits == "only when i need to") {
         yearsLeft += 1;
       } else if (parseInt(doctorvisits) >= 2) {
@@ -214,21 +208,20 @@ var handlers = {
       }
       this.attributes["daysLeft"] = daysLeft.toString();
       this.attributes["averageYearsLeft"] = averageYearsLeft.toString();
-      console.log("BMI = " + bodyMassIndex);
-      console.log("AVERAGE YEARS LEFT: " + averageYearsLeft);
-      console.log("APPROXIMATE DAYS LEFT: " + daysLeft);
-      console.log(tipsHeard);
+      if(process.env.debugFlag){console.log("BMI = " + bodyMassIndex)};
+      if(process.env.debugFlag){console.log("AVERAGE YEARS LEFT: " + averageYearsLeft)};
+      if(process.env.debugFlag){console.log("APPROXIMATE DAYS LEFT: " + daysLeft)};
+      if(process.env.debugFlag){console.log(tipsHeard)};
       speechOutput += "You have " + averageYearsLeft + "years left to live. And "
       speechOutput += "you have " + daysLeft + " days left to live. "
       speechOutput += "Now I will tell you a tip on how to increase your life expectancy. "
       readItem(this, tipsHeard, function(obj, data) {
-        console.log("in read item = " + tipsHeard);
         tipsHeard.push(data['Id']);
         obj.attributes["tipsHeard"] = tipsHeard;
         obj.emit(":tell", speechOutput += data['tip']);
-        console.log("at the end of read item = " + tipsHeard);
+        if(process.env.debugFlag){console.log("at the end of read item = " + tipsHeard)};
       });
-      console.log("tipsHeard after: " + tipsHeard);
+      if(process.env.debugFlag){console.log("tipsHeard after: " + tipsHeard)};
     },
     "AMAZON.HelpIntent": function() {
       this.emit(':tell', reprompt);
@@ -250,22 +243,22 @@ var handlers = {
 
 
 function delegateSlotCollection(){
-    console.log("in delegateSlotCollection");
-    console.log("current dialogState: "+this.event.request.dialogState);
+    if(process.env.debugFlag){console.log("in delegateSlotCollection")};
+    if(process.env.debugFlag){console.log("current dialogState: "+this.event.request.dialogState)};
       if (this.event.request.dialogState === "STARTED") {
-        console.log("in Beginning");
+        if(process.env.debugFlag){console.log("in Beginning")};
         var updatedIntent=this.event.request.intent;
         //optionally pre-fill slots: update the intent object with slot values for which
         //you have defaults, then return Dialog.Delegate with this updated intent
         // in the updatedIntent property
         this.emit(":delegate", updatedIntent);
       } else if (this.event.request.dialogState !== "COMPLETED") {
-        console.log("in not completed");
+        if(process.env.debugFlag){console.log("in not completed")};
         // return a Dialog.Delegate directive with no updatedIntent property.
         this.emit(":delegate");
       } else {
-        console.log("in completed");
-        console.log("returning: "+ JSON.stringify(this.event.request.intent));
+        if(process.env.debugFlag){console.log("in completed")};
+        if(process.env.debugFlag){console.log("returning: "+ JSON.stringify(this.event.request.intent))};
         // Dialog is now complete and all required slots should be filled,
         // so call your normal intent handler.
         return this.event.request.intent;
@@ -278,11 +271,37 @@ function randomPhrase(array) {
   return(array[i]);
 }
 
-function getRandomTipWithExclusions (lengthOfArray, arrayOfIndexesToExclude) {
+function readItem(obj, pastTips, callback) {
+  var table = "Tips";
+  var id = getRandomTipWithExclusions(obj, totalTips, tipsHeard).toString();
+  var params = {
+    TableName: table,
+    Key:{
+      "Id": id
+    }
+  };
+  docClient.get(params, function(err, data) {
+    if(err) {
+      console.error("Unable to read item. Error JSON:", JSON.stringify(err, null, 2));
+    } else {
+      if(process.env.debugFlag){console.log("GetItem succeeded:", JSON.stringify(data, null, 2))};
+      //
+      callback(obj, data['Item']);
+    }
+  });
+}
+
+function getRandomTipWithExclusions(obj, lengthOfArray, arrayOfIndexesToExclude) {
   var rand = null;
 
+  if((arrayOfIndexesToExclude.length) > lengthOfArray) {
+    arrayOfIndexesToExclude = [];
+    obj.attributes['tipsHeard'] = [];
+    obj.tipsHeard = [];
+    if(process.env.debugFlag){console.log('tipsHeard has RESET')};
+  }
   while (rand === null || arrayOfIndexesToExclude.toString().includes(rand)) {
-    rand = Math.round(Math.random() * (lengthOfArray - 1));
+    rand = Math.round(Math.random() * (lengthOfArray));
   }
   return rand;
 }
