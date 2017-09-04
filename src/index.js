@@ -20,9 +20,9 @@ var totalTips = process.env.TOTAL_TIP_COUNT;
 var tipsHeard = [];
 
 var speechOutput;
-var welcomeOutput = "Hello, I am going to begin by asking you a few questions about yourself to calculate how many days you have left to live. "
+var welcomeOutput = "Hello, I am going to begin by asking you a few questions about yourself, to calculate how many days you have left to live. "
 + "Tell me to begin when you are ready. ";
-var reprompt = "Just tell me when you're ready to begin. ";
+var reprompt = "Just tell me when you're ready, to begin. ";
 var DaysLeftIntro = [
   "Okay. ",
   "Great. ",
@@ -39,10 +39,15 @@ var handlers = {
     // Make sure this is a locally-scoped var within each intent function.
     var intentTrackingID = ua(googleUA, {https: true});
 
-    // report a success
+    // Google Analytics
     intentTrackingID.pageview("/").send();
 
+    if(process.env.debugFlag){
+      console.log('Launching request...')
+      console.log('this.attributes["daysLeft"] = ' + this.attributes['daysLeft'])
+    };
     if(this.attributes['daysLeft'] !== undefined) {
+      if(process.env.debugFlag){console.log('this.attributes["tipsHeard"] = ' + this.attributes["tipsHeard"])};
       tipsHeard = this.attributes["tipsHeard"];
       if (tipsHeard === undefined) {
         tipsHeard = [];
@@ -54,10 +59,12 @@ var handlers = {
         obj.attributes['tipsHeard'] = tipsHeard;
 
         obj.emit(":tell", "Welcome back, you have " + obj.attributes['daysLeft'] + " days left to live." +
-          " Here is a tip to help you live a longer and healthier life. " + data['tip']);
+          " Here is a tip, to help you live a longer and healthier life. " + data['tip']);
 
-        if(process.env.debugFlag){console.log("Tips so far: " + tipsHeard)};
-        if(process.env.debugFlag){console.log("TOTAL TIPS HEARD: " + tipsHeard.length)};
+        if(process.env.debugFlag){
+          console.log("Tips so far: " + tipsHeard)
+          console.log("TOTAL TIPS HEARD: " + tipsHeard.length)
+        };
       });
     } else if (this.attributes['daysLeft'] == undefined){
       this.emit(':ask', welcomeOutput, reprompt);
@@ -116,11 +123,13 @@ var handlers = {
                           // stress condition
       if(parseInt(stress) <= 4) {
         yearsLeft += 1;
-      } else if (parseInt(stress) >= 6 && parseInt(stress) <= 10) {
-        yearsLeft -= 1;
+      } else if (parseInt(stress) >= 6) {
+        yearsLeft -= 4;
       } else if (parseInt(stress) == 5) {
-        yearsLeft += 0;
-      };
+        yearsLeft -= 1;
+      } else {
+        yearsLeft -= 8;
+      }
 
                           //smoking condition
       if(parseInt(smoke) == 0 || smoke == "none" || smoke == "i don't smoke") {
@@ -208,19 +217,22 @@ var handlers = {
       }
       this.attributes["daysLeft"] = daysLeft.toString();
       this.attributes["averageYearsLeft"] = averageYearsLeft.toString();
-      if(process.env.debugFlag){console.log("BMI = " + bodyMassIndex)};
-      if(process.env.debugFlag){console.log("AVERAGE YEARS LEFT: " + averageYearsLeft)};
-      if(process.env.debugFlag){console.log("APPROXIMATE DAYS LEFT: " + daysLeft)};
-      if(process.env.debugFlag){console.log(tipsHeard)};
-      speechOutput += "You have " + averageYearsLeft + "years left to live. And "
+      if(process.env.debugFlag){
+        console.log("BMI = " + bodyMassIndex)
+        console.log("AVERAGE YEARS LEFT: " + averageYearsLeft)
+        console.log("APPROXIMATE DAYS LEFT: " + daysLeft)
+        console.log(tipsHeard)
+      };
+      speechOutput += "<break time=\".6s\"/>You have " + averageYearsLeft + " years left to live.<break time=\".8s\"/> And "
       speechOutput += "you have " + daysLeft + " days left to live. "
-      speechOutput += "Now I will tell you a tip on how to increase your life expectancy. "
+      speechOutput += "Now, I will tell you a tip, on how to increase your life expectancy. "
       readItem(this, tipsHeard, function(obj, data) {
         tipsHeard.push(data['Id']);
         obj.attributes["tipsHeard"] = tipsHeard;
-        obj.emit(":tell", speechOutput += data['tip']);
+        obj.emit(":tell", speechOutput += data['tip'] + " <break time=\".6s\"/>If you would like to hear more tips, simply start the skill again.<break time=\"1s\"/> I'm here to help.<break time=\".3s\"/>I want you to use the rest of your days wisely, <break time=\".3s\"/> and I hope that you do.<break time=\"1s\"/> Thank you.");
         if(process.env.debugFlag){console.log("at the end of read item = " + tipsHeard)};
       });
+
       if(process.env.debugFlag){console.log("tipsHeard after: " + tipsHeard)};
     },
     "AMAZON.HelpIntent": function() {
@@ -243,8 +255,10 @@ var handlers = {
 
 
 function delegateSlotCollection(){
-    if(process.env.debugFlag){console.log("in delegateSlotCollection")};
-    if(process.env.debugFlag){console.log("current dialogState: "+this.event.request.dialogState)};
+    if(process.env.debugFlag){
+      console.log("in delegateSlotCollection")
+      console.log("current dialogState: "+this.event.request.dialogState)
+    };
       if (this.event.request.dialogState === "STARTED") {
         if(process.env.debugFlag){console.log("in Beginning")};
         var updatedIntent=this.event.request.intent;
@@ -257,8 +271,10 @@ function delegateSlotCollection(){
         // return a Dialog.Delegate directive with no updatedIntent property.
         this.emit(":delegate");
       } else {
-        if(process.env.debugFlag){console.log("in completed")};
-        if(process.env.debugFlag){console.log("returning: "+ JSON.stringify(this.event.request.intent))};
+        if(process.env.debugFlag){
+          console.log("in completed")
+          console.log("returning: "+ JSON.stringify(this.event.request.intent))
+        };
         // Dialog is now complete and all required slots should be filled,
         // so call your normal intent handler.
         return this.event.request.intent;
@@ -273,36 +289,41 @@ function randomPhrase(array) {
 
 function readItem(obj, pastTips, callback) {
   var table = "Tips";
-  var id = getRandomTipWithExclusions(obj, totalTips, tipsHeard).toString();
+  var id = getRandomTipWithExclusions(totalTips, tipsHeard, obj).toString();
   var params = {
     TableName: table,
     Key:{
       "Id": id
     }
   };
+  if(process.env.debugFlag){console.log("GetItem Params: ", JSON.stringify(params))};
   docClient.get(params, function(err, data) {
     if(err) {
-      console.error("Unable to read item. Error JSON:", JSON.stringify(err, null, 2));
+      console.error("Unable to read item. Error JSON:", JSON.stringify(err));
     } else {
-      if(process.env.debugFlag){console.log("GetItem succeeded:", JSON.stringify(data, null, 2))};
+      if(process.env.debugFlag){console.log("GetItem succeeded:", JSON.stringify(data))};
       //
       callback(obj, data['Item']);
     }
   });
 }
 
-function getRandomTipWithExclusions(obj, lengthOfArray, arrayOfIndexesToExclude) {
-  var rand = null;
-
-  if((arrayOfIndexesToExclude.length) > lengthOfArray) {
-    arrayOfIndexesToExclude = [];
-    obj.attributes['tipsHeard'] = [];
-    obj.tipsHeard = [];
-    if(process.env.debugFlag){console.log('tipsHeard has RESET')};
-  }
-  while (rand === null || arrayOfIndexesToExclude.toString().includes(rand)) {
-    rand = Math.round(Math.random() * (lengthOfArray));
-  }
+function getRandomTipWithExclusions(lengthOfArray = 0, arrayOfIndexesToExclude, obj) {
+	var rand = 0;
+	if (arrayOfIndexesToExclude.length == lengthOfArray) {
+		arrayOfIndexesToExclude = [];
+		obj.tipsHeard = [];
+		if(process.env.debugFlag){
+      console.log('RESET TIPSHEARD')
+      console.log('TIPSHEARD = ' + obj.tipsHeard)
+    };
+	}
+	var min = Math.ceil(1);
+  var max = Math.floor(lengthOfArray);
+	while (rand == 0 || arrayOfIndexesToExclude.includes(rand)) {
+		rand = Math.floor(Math.random() * (max - min + 1)) + min;
+    console.log("random number from loop: " + rand);
+	}
   return rand;
 }
 
