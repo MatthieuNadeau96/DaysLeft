@@ -43,7 +43,7 @@ var handlers = {
     intentTrackingID.pageview("/").send();
 
     if(process.env.debugFlag){
-      console.log('Launching request...')
+      console.log('Launching LaunchRequest...')
       console.log('this.attributes["daysLeft"] = ' + this.attributes['daysLeft'])
     };
     if(this.attributes['daysLeft'] !== undefined) {
@@ -53,7 +53,7 @@ var handlers = {
         tipsHeard = [];
       }
       readItem(this, tipsHeard, function(obj, data) {
-        if(process.env.debugFlag){console.log(data)};
+        if(process.env.debugFlag){console.log("data in readItem: " + data)};
 
         tipsHeard.push(data['Id']);
         obj.attributes['tipsHeard'] = tipsHeard;
@@ -66,7 +66,9 @@ var handlers = {
           console.log("TOTAL TIPS HEARD: " + tipsHeard.length)
         };
       });
-    } else if (this.attributes['daysLeft'] == undefined){
+      // if (this.attributes['daysLeft'] == undefined)
+    } else {
+      if(process.env.debugFlag){console.log("Starting DaysLeftIntent...")}
       this.emit(':ask', welcomeOutput, reprompt);
     };
   },
@@ -74,7 +76,8 @@ var handlers = {
 
 
     var filledSlots = delegateSlotCollection.call(this);
-    console.log(JSON.stringify(filledSlots));
+    console.log("filled slots: " + JSON.stringify(filledSlots));
+    this.emit(':ask', welcomeOutput, reprompt);
     var speechOutput = randomPhrase(DaysLeftIntro);
 
       var dateOfBirth=filledSlots.slots.dateOfBirth.value;
@@ -229,14 +232,16 @@ var handlers = {
       readItem(this, tipsHeard, function(obj, data) {
         tipsHeard.push(data['Id']);
         obj.attributes["tipsHeard"] = tipsHeard;
-        obj.emit(":tell", speechOutput += data['tip'] + " <break time=\".6s\"/>If you would like to hear more tips, simply start the skill again.<break time=\"1s\"/> I'm here to help.<break time=\".3s\"/>I want you to use the rest of your days wisely, <break time=\".3s\"/> and I hope that you do.<break time=\"1s\"/> Thank you.");
+        obj.emit(":tell", speechOutput += data['tip'] + " <break time=\".6s\"/>If you would like to hear more tips," +
+        "simply start the skill again.<break time=\"1s\"/> I'm here to help.<break time=\".3s\"/>I want you to use " +
+        "the rest of your days wisely, <break time=\".3s\"/> and I hope that you do.<break time=\"1s\"/> Thank you.");
         if(process.env.debugFlag){console.log("at the end of read item = " + tipsHeard)};
       });
 
       if(process.env.debugFlag){console.log("tipsHeard after: " + tipsHeard)};
     },
     "AMAZON.HelpIntent": function() {
-      this.emit(':tell', reprompt);
+      this.emit(':ask', reprompt);
     },
     "AMAZON.StopIntent": function() {
       this.emit(':tell', "Goodbye!");
@@ -257,10 +262,13 @@ var handlers = {
 function delegateSlotCollection(){
     if(process.env.debugFlag){
       console.log("in delegateSlotCollection")
-      console.log("current dialogState: "+this.event.request.dialogState)
+      console.log("current event object: " + JSON.stringify(this.event))
     };
       if (this.event.request.dialogState === "STARTED") {
-        if(process.env.debugFlag){console.log("in Beginning")};
+        if(process.env.debugFlag){
+            console.log("in Beginning");
+            console.log("this.event.request.intent: " + JSON.stringify(this.event.request.intent));
+          };
         var updatedIntent=this.event.request.intent;
         //optionally pre-fill slots: update the intent object with slot values for which
         //you have defaults, then return Dialog.Delegate with this updated intent
