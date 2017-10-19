@@ -1,16 +1,10 @@
 'use strict';
-var Alexa = require("alexa-sdk");
+const Alexa = require("alexa-sdk");
+const APP_ID = 'amzn1.ask.skill.fa9070f2-bc03-4778-9d5d-deb9543c773b'
 var AWS = require('aws-sdk');
 var ua = require('universal-analytics');
 var googleUA = 'UA-104151044-2'; //tracking ID
 
-exports.handler = function(event, context, callback) {
-  var alexa = Alexa.handler(event, context);
-  alexa.appId = 'amzn1.ask.skill.fa9070f2-bc03-4778-9d5d-deb9543c773b';
-  alexa.dynamoDBTableName = 'DaysLeft';
-  alexa.registerHandlers(handlers);
-  alexa.execute();
-};
 AWS.config.update({
   region: "us-east-1"
 });
@@ -20,10 +14,10 @@ var totalTips = process.env.TOTAL_TIP_COUNT;
 var tipsHeard = [];
 
 var speechOutput;
-var welcomeOutput = "Hello, I am going to begin by asking you a few questions about yourself, to calculate how many days you have left to live. "
+const welcomeOutput = "Hello, I am going to begin by asking you a few questions about yourself, to calculate how many days you have left to live. "
 + "Tell me to begin when you are ready. ";
 var reprompt = "Just tell me when you're ready, to begin. ";
-var DaysLeftIntro = [
+const DaysLeftIntro = [
   "Okay. ",
   "Great. ",
   "Nice. ",
@@ -33,12 +27,11 @@ var DaysLeftIntro = [
   "Splendid! "
 ];
 
-var handlers = {
+const handlers = {
   'LaunchRequest': function() {
 
     // Make sure this is a locally-scoped var within each intent function.
     var intentTrackingID = ua(googleUA, {https: true});
-
     // Google Analytics
     intentTrackingID.pageview("/").send();
 
@@ -66,10 +59,10 @@ var handlers = {
           console.log("TOTAL TIPS HEARD: " + tipsHeard.length)
         };
       });
-      // if (this.attributes['daysLeft'] == undefined)
-    } else {
+    } else if (this.attributes['daysLeft'] == undefined) {
       if(process.env.debugFlag){console.log("Starting DaysLeftIntent...")}
-      this.emit(':ask', welcomeOutput, reprompt);
+      this.response.speak(welcomeOutput).listen(reprompt);
+      this.emit(':responseReady');
     };
   },
   'DaysLeftIntent': function() {
@@ -77,32 +70,31 @@ var handlers = {
 
     var filledSlots = delegateSlotCollection.call(this);
     console.log("filled slots: " + JSON.stringify(filledSlots));
-    this.emit(':ask', welcomeOutput, reprompt);
     var speechOutput = randomPhrase(DaysLeftIntro);
 
-      var dateOfBirth=filledSlots.slots.dateOfBirth.value;
+      var dateOfBirth=this.event.request.intent.slots.dateOfBirth.value;
       this.attributes['dateOfBirth'] = dateOfBirth;
-      var weight=filledSlots.slots.weight.value;
+      var weight=this.event.request.intent.slots.weight.value;
       this.attributes['weight'] = weight;
-      var exercise=filledSlots.slots.exercise.value;
+      var exercise=this.event.request.intent.slots.exercise.value;
       this.attributes['exercise'] = exercise;
-      var smoke=filledSlots.slots.smoke.value;
+      var smoke=this.event.request.intent.slots.smoke.value;
       this.attributes['smoke'] = smoke;
-      var drivingAccident=filledSlots.slots.drivingAccident.value;
+      var drivingAccident=this.event.request.intent.slots.drivingAccident.value;
       this.attributes['drivingAccident'] = drivingAccident;
-      var drivingDUI=filledSlots.slots.drivingDUI.value;
+      var drivingDUI=this.event.request.intent.slots.drivingDUI.value;
       this.attributes['drivingDUI'] = drivingDUI;
-      var alcohol=filledSlots.slots.alcohol.value;
+      var alcohol=this.event.request.intent.slots.alcohol.value;
       this.attributes['alcohol'] = alcohol;
-      var stress=filledSlots.slots.stress.value;
+      var stress=this.event.request.intent.slots.stress.value;
       this.attributes['stress'] = stress;
-      var height=filledSlots.slots.height.value;
+      var height=this.event.request.intent.slots.height.value;
       this.attributes['height'] = height;
-      var sleep=filledSlots.slots.sleep.value;
+      var sleep=this.event.request.intent.slots.sleep.value;
       this.attributes['sleep'] = sleep;
-      var fastfood=filledSlots.slots.fastfood.value;
+      var fastfood=this.event.request.intent.slots.fastfood.value;
       this.attributes['fastfood'] = fastfood;
-      var doctorvisits=filledSlots.slots.doctorvisits.value;
+      var doctorvisits=this.event.request.intent.slots.doctorvisits.value;
       this.attributes['doctorvisits'] = doctorvisits;
 
       var yearsLeft = 0;
@@ -224,44 +216,65 @@ var handlers = {
         console.log("BMI = " + bodyMassIndex)
         console.log("AVERAGE YEARS LEFT: " + averageYearsLeft)
         console.log("APPROXIMATE DAYS LEFT: " + daysLeft)
-        console.log(tipsHeard)
+        console.log("tipsHeard: " + tipsHeard)
       };
       speechOutput += "<break time=\".6s\"/>You have " + averageYearsLeft + " years left to live.<break time=\".8s\"/> And "
       speechOutput += "you have " + daysLeft + " days left to live. "
-      speechOutput += "Now, I will tell you a tip, on how to increase your life expectancy. "
+      speechOutput += "If you would like to hear a tip, simply start the skill again.<break time=\"1s\"/> I'm here to help you.<break time=\".3s\"/>I want you to use the rest of your days wisely, <break time=\".3s\"/> and I hope that you do.<break time=\"1s\"/> Thank you."
       readItem(this, tipsHeard, function(obj, data) {
         tipsHeard.push(data['Id']);
         obj.attributes["tipsHeard"] = tipsHeard;
-        obj.emit(":tell", speechOutput += data['tip'] + " <break time=\".6s\"/>If you would like to hear more tips," +
-        "simply start the skill again.<break time=\"1s\"/> I'm here to help.<break time=\".3s\"/>I want you to use " +
-        "the rest of your days wisely, <break time=\".3s\"/> and I hope that you do.<break time=\"1s\"/> Thank you.");
-        if(process.env.debugFlag){console.log("at the end of read item = " + tipsHeard)};
+        if(process.env.debugFlag){console.log("data['tip']: " + data['tip'])};
+
+        // obj.emit(":tell", "Okay." + data['tip'] + " <break time=\".6s\"/>If you would like to hear more tips," +
+        // "simply start the skill again.<break time=\"1s\"/> I'm here to help.<break time=\".3s\"/>I want you to use " +
+        // "the rest of your days wisely, <break time=\".3s\"/> and I hope that you do.<break time=\"1s\"/> Thank you.");
+        if(process.env.debugFlag){console.log("at the end of the second read item = " + tipsHeard)};
       });
 
       if(process.env.debugFlag){console.log("tipsHeard after: " + tipsHeard)};
+      this.response.speak(speechOutput);
+      this.emit(":responseReady");
     },
     "AMAZON.HelpIntent": function() {
-      this.emit(':ask', reprompt);
+      speechOutput = "I'm going to ask you some questions, to be able to estimate how long you have to live. So just tell me when you're ready, to begin. ";
+      this.response.speak(speechOutput).listen(reprompt);
+      this.emit(':responseReady');
     },
     "AMAZON.StopIntent": function() {
-      this.emit(':tell', "Goodbye!");
+      speechOutput = "Stopped";
+      this.response.speak(speechOutput);
+      this.emit(':responseReady');
     },
     "AMAZON.CancelIntent": function() {
-      this.emit(':tell', "Goodbye!");
+      speechOutput = "Cancelled";
+      this.response.speak(speechOutput);
+      this.emit(':responseReady');
     },
     'Unhandled': function () {
       console.log("UNHANDLED");
     },
     'SessionEndedRequest': function() {
+      speechOutput = "Session Ended";
+      this.response.speak(speechOutput);
       console.log('session ended!');
-      this.emit(":tell", "Goodbye");
+      this.emit(':responseReady');
     }
+};
+
+exports.handler = function(event, context, callback) {
+  var alexa = Alexa.handler(event, context);
+  alexa.appId = 'amzn1.ask.skill.fa9070f2-bc03-4778-9d5d-deb9543c773b';
+  alexa.dynamoDBTableName = 'DaysLeft';
+  alexa.registerHandlers(handlers);
+  alexa.execute();
 };
 
 
 function delegateSlotCollection(){
     if(process.env.debugFlag){
       console.log("in delegateSlotCollection")
+      console.log("current dialogState: " + this.event.request.dialogState);
       console.log("current event object: " + JSON.stringify(this.event))
     };
       if (this.event.request.dialogState === "STARTED") {
