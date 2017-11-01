@@ -202,7 +202,7 @@ const handlers = {
       };
 
       //////////////////////////////////////////////////////////
-      var averageYearsLeft = (yearsLeft) + (Math.round((79 - age)));
+      var averageYearsLeft = (yearsLeft) + (Math.round((87 - age)));
       var daysLeft = (averageYearsLeft*365);
       if(this.attributes['tipsHeard'] !== undefined) {
         tipsHeard = this.attributes["tipsHeard"];
