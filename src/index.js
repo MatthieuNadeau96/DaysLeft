@@ -14,7 +14,7 @@ var totalTips = process.env.TOTAL_TIP_COUNT;
 var tipsHeard = [];
 
 var speechOutput;
-const welcomeOutput = "Hello, I am going to begin by asking you a few questions about yourself, to calculate how many days you have left to live. "
+const welcomeOutput = "Hello, I am going to begin by asking you a few questions about yourself, to calculate how many days you have left to live. Please try to answer your questions with numbers, to help with my calculation. "
 + "Tell me to begin when you are ready. ";
 var reprompt = "Just tell me when you're ready, to begin. ";
 const DaysLeftIntro = [
@@ -26,6 +26,13 @@ const DaysLeftIntro = [
   "Thank you! ",
   "Splendid! "
 ];
+
+var cardTitle = '';
+var cardContent = '';
+var imageObj = {
+    smallImageUrl: 'https://images-na.ssl-images-amazon.com/images/I/71ZFuYaOyGL._AC_US218_.png',
+    largeImageUrl: 'https://images-na.ssl-images-amazon.com/images/I/71ZFuYaOyGL._AC_US218_.png'
+};
 
 const handlers = {
   'LaunchRequest': function() {
@@ -51,8 +58,13 @@ const handlers = {
         tipsHeard.push(data['Id']);
         obj.attributes['tipsHeard'] = tipsHeard;
 
-        obj.emit(":tell", "Welcome back, you have " + obj.attributes['daysLeft'] + " days left to live." +
+        cardTitle = 'Welcome back!\n';
+        cardContent = 'You have: ' + obj.attributes['averageYearsLeft'] + ' years left.' + '\nYou have: ' + obj.attributes['daysLeft'] + '  days left.\n\n' + '...' + '\n\nIf you enjoyed this skill, please rate it 5 stars in the Alexa skill store. That would really help support the skill.' + '\n...' + '\nThank you!';
+
+        obj.response.cardRenderer(cardTitle, cardContent, imageObj);
+        obj.response.speak("Welcome back, you have " + obj.attributes['daysLeft'] + " days left to live." +
           " Here is a tip, to help you live a longer and healthier life. " + data['tip']);
+        obj.emit(':responseReady');
 
         if(process.env.debugFlag){
           console.log("Tips so far: " + tipsHeard)
@@ -122,8 +134,6 @@ const handlers = {
         yearsLeft -= 4;
       } else if (parseInt(stress) == 5) {
         yearsLeft -= 1;
-      } else {
-        yearsLeft -= 8;
       }
 
                           //smoking condition
@@ -131,8 +141,6 @@ const handlers = {
         yearsLeft += 2;
       } else if(parseInt(smoke) >= 2) {
         yearsLeft -= 8;
-      } else {
-        yearsLeft -= 4;
       };
 
                           //accident condition
@@ -221,16 +229,22 @@ const handlers = {
       speechOutput += "<break time=\".6s\"/>You have " + averageYearsLeft + " years left to live.<break time=\".8s\"/> And "
       speechOutput += "you have " + daysLeft + " days left to live. "
       speechOutput += "If you would like to hear a tip, simply start the skill again.<break time=\"1s\"/> I'm here to help you.<break time=\".3s\"/>I want you to use the rest of your days wisely, <break time=\".3s\"/> and I hope that you do.<break time=\"1s\"/> Thank you."
-      readItem(this, tipsHeard, function(obj, data) {
-        tipsHeard.push(data['Id']);
-        obj.attributes["tipsHeard"] = tipsHeard;
-        if(process.env.debugFlag){console.log("data['tip']: " + data['tip'])};
 
-        // obj.emit(":tell", "Okay." + data['tip'] + " <break time=\".6s\"/>If you would like to hear more tips," +
-        // "simply start the skill again.<break time=\"1s\"/> I'm here to help.<break time=\".3s\"/>I want you to use " +
-        // "the rest of your days wisely, <break time=\".3s\"/> and I hope that you do.<break time=\"1s\"/> Thank you.");
-        if(process.env.debugFlag){console.log("at the end of the second read item = " + tipsHeard)};
-      });
+      cardTitle = 'My Days Left';
+      cardContent = 'Years Left: ' + averageYearsLeft + '\nDays Left: ' + daysLeft + '\n...' + '\nIf you enjoyed this skill, please rate it 5 stars in the Alexa skill store. That would really help out, Thank you!' + '\n...' + '\nHere are results are based off of the answers you provided: ' + '\nBirthday: ' + parseInt(dateOfBirth) + '\nHeight: ' + parseInt(height) + 'in' + '\nWeight:  '+ parseInt(weight) + 'lbs' + '\nExercise: ' + parseInt(exercise) + ' hours a week' + '\nSmoke: ' + parseInt(smoke) + ' packs of cigerettes a week' + '\nAlcohol: ' + parseInt(alcohol) + ' drinks a week' + '\nStress: ' + parseInt(stress) + '\nDriving Accidents: ' + parseInt(drivingAccident) + ' in the past 3 years' + "\nDUI's: " + parseInt(drivingDUI) + '\nFast Food: ' + parseInt(fastfood) + ' times a month' + '\nSleep: ' + parseInt(sleep) + ' hours a day' + '\nDoctor Visits: ' + parseInt(doctorvisits) + ' a year';
+
+      this.emit(':tellWithCard', speechOutput, cardTitle, cardContent, imageObj);
+
+      // readItem(this, tipsHeard, function(obj, data) {
+      //   tipsHeard.push(data['Id']);
+      //   obj.attributes["tipsHeard"] = tipsHeard;
+      //   if(process.env.debugFlag){console.log("data['tip']: " + data['tip'])};
+      //
+      //   // obj.emit(":tell", "Okay." + data['tip'] + " <break time=\".6s\"/>If you would like to hear more tips," +
+      //   // "simply start the skill again.<break time=\"1s\"/> I'm here to help.<break time=\".3s\"/>I want you to use " +
+      //   // "the rest of your days wisely, <break time=\".3s\"/> and I hope that you do.<break time=\"1s\"/> Thank you.");
+      //   if(process.env.debugFlag){console.log("at the end of the second read item = " + tipsHeard)};
+      // });
 
       if(process.env.debugFlag){console.log("tipsHeard after: " + tipsHeard)};
       this.response.speak(speechOutput);
