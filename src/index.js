@@ -30,8 +30,8 @@ const DaysLeftIntro = [
 var cardTitle = '';
 var cardContent = '';
 var imageObj = {
-    smallImageUrl: 'https://images-na.ssl-images-amazon.com/images/I/71ZFuYaOyGL._AC_US218_.png',
-    largeImageUrl: 'https://images-na.ssl-images-amazon.com/images/I/71ZFuYaOyGL._AC_US218_.png'
+    smallImageUrl: 'https://s3.amazonaws.com/mydaysleftlogo/yearsLeft(108x108)movedhourglass.png',
+    largeImageUrl: 'https://s3.amazonaws.com/mydaysleftlogo/yearsLeft(512x512)movedhourglass.png'
 };
 
 const handlers = {
