@@ -58,12 +58,18 @@ const handlers = {
         tipsHeard.push(data['Id']);
         obj.attributes['tipsHeard'] = tipsHeard;
 
+        var average_YearsLeft = numberWithCommas(obj.attributes['averageYearsLeft']);
+        var days_Left = numberWithCommas(obj.attributes['daysLeft']);
+        var hoursLeft = numberWithCommas(average_YearsLeft*8760);
+        var minutesLeft = numberWithCommas(average_YearsLeft*525600);
+        var secondsLeft = numberWithCommas(average_YearsLeft*31557600);
+
         cardTitle = 'Welcome back!\n';
-        cardContent = 'You have: ' + obj.attributes['averageYearsLeft'] + ' years left.' + '\nYou have: ' + obj.attributes['daysLeft'] + '  days left.\n\n' + '...' + '\n\nIf you enjoyed this skill, please rate it 5 stars in the Alexa skill store. That would really help support the skill.' + '\n...' + '\nThank you!';
+        cardContent = 'Years left: ' + average_YearsLeft + '\nDays left: ' + days_Left + '\nHours left: ' + hoursLeft + '\nMinutes left: ' + minutesLeft + '\nSeconds left: ' + secondsLeft + '\n...\nHere is your tip: '+ data['tipSimple'] + '\n...\nIf you enjoyed this skill, please rate it 5 stars in the Alexa skill store!\n.\n All you need to do is: \n1. Go to the "Skills" section on your Alexa app\n 2. Tap "Your Skills" in the top right corner\n3. Find "My Years Left" \n4. Scroll to the bottom and tap "Write a Review"\n5. Show support! \n~\n Enjoy the present moment! :)';
 
         obj.response.cardRenderer(cardTitle, cardContent, imageObj);
         obj.response.speak("Welcome back, you have " + obj.attributes['daysLeft'] + " days left to live." +
-          " Here is a tip, to help you live a longer and healthier life. " + data['tip']);
+          " Here is a tip, to help you live a longer and healthier life. " + data['tip'] + '<break time="1s"/> I added this tip, and more information, on your Alexa skill.<break time=".6s"/>' + " Please don't be afraid to come back for more tips." +  '<break time=".6s"/>Thank you!');
         obj.emit(':responseReady');
 
         if(process.env.debugFlag){
@@ -141,7 +147,9 @@ const handlers = {
         yearsLeft += 2;
       } else if(parseInt(smoke) >= 2) {
         yearsLeft -= 8;
-      };
+      } else {
+        yearsLeft += 1;
+      }
 
                           //accident condition
       if(parseInt(drivingAccident) >= 4) {
@@ -210,8 +218,11 @@ const handlers = {
       };
 
       //////////////////////////////////////////////////////////
-      var averageYearsLeft = (yearsLeft) + (Math.round((87 - age)));
-      var daysLeft = (averageYearsLeft*365);
+      var averageYearsLeft = numberWithCommas((yearsLeft) + (Math.round((87 - age))));
+      var daysLeft = numberWithCommas(averageYearsLeft*365);
+      var hoursLeft = numberWithCommas(averageYearsLeft*8760);
+      var minutesLeft = numberWithCommas(averageYearsLeft*525600);
+      var secondsLeft = numberWithCommas(averageYearsLeft*31557600);
       if(this.attributes['tipsHeard'] !== undefined) {
         tipsHeard = this.attributes["tipsHeard"];
         if (tipsHeard === undefined) {
@@ -226,12 +237,11 @@ const handlers = {
         console.log("APPROXIMATE DAYS LEFT: " + daysLeft)
         console.log("tipsHeard: " + tipsHeard)
       };
-      speechOutput += "<break time=\".6s\"/>You have " + averageYearsLeft + " years left to live.<break time=\".8s\"/> And "
-      speechOutput += "you have " + daysLeft + " days left to live. "
+      speechOutput += "<break time=\".6s\"/>You have " + averageYearsLeft + " years left to live.<break time=\".8s\"/> That means that you have " + daysLeft + " days left to live. "
       speechOutput += "If you would like to hear a tip, simply start the skill again.<break time=\"1s\"/> I'm here to help you.<break time=\".3s\"/>I want you to use the rest of your days wisely, <break time=\".3s\"/> and I hope that you do.<break time=\"1s\"/> Thank you."
 
-      cardTitle = 'My Days Left';
-      cardContent = 'Years Left: ' + averageYearsLeft + '\nDays Left: ' + daysLeft + '\n...' + '\nIf you enjoyed this skill, please rate it 5 stars in the Alexa skill store. That would really help out, Thank you!' + '\n...' + '\nHere are results are based off of the answers you provided: ' + '\nBirthday: ' + parseInt(dateOfBirth) + '\nHeight: ' + parseInt(height) + 'in' + '\nWeight:  '+ parseInt(weight) + 'lbs' + '\nExercise: ' + parseInt(exercise) + ' hours a week' + '\nSmoke: ' + parseInt(smoke) + ' packs of cigerettes a week' + '\nAlcohol: ' + parseInt(alcohol) + ' drinks a week' + '\nStress: ' + parseInt(stress) + '\nDriving Accidents: ' + parseInt(drivingAccident) + ' in the past 3 years' + "\nDUI's: " + parseInt(drivingDUI) + '\nFast Food: ' + parseInt(fastfood) + ' times a month' + '\nSleep: ' + parseInt(sleep) + ' hours a day' + '\nDoctor Visits: ' + parseInt(doctorvisits) + ' a year';
+      cardTitle = 'Come back for a Tip!';
+      cardContent = 'Years Left: ' + averageYearsLeft + '\nDays Left: ' + daysLeft + '\n...' + '\nIf you enjoyed this skill, please rate it 5 stars in the Alexa skill store. That would really help out, Thank you!' + '\n...' + '\nHere are results are based off of the answers you provided: ' + '\nBirthday: ' + parseInt(dateOfBirth) + '\nHeight: ' + parseInt(height) + 'in' + '\nWeight:  '+ parseInt(weight) + 'lbs' + '\nExercise: ' + parseInt(exercise) + ' hours a week' + '\nSmoke: ' + parseInt(smoke) + ' packs of cigerettes a week' + '\nAlcohol: ' + parseInt(alcohol) + ' drinks a week' + '\nStress: ' + parseInt(stress) + '\nDriving Accidents: ' + parseInt(drivingAccident) + ' in the past 3 years' + "\nDUI's: " + parseInt(drivingDUI) + '\nFast Food: ' + parseInt(fastfood) + ' times a month' + '\nSleep: ' + parseInt(sleep) + ' hours a day' + '\nDoctor Visits: ' + parseInt(doctorvisits) + ' a year' + '\n...\n If your results are not what you expected. Simply say: "Alexa, ask My Days Left to begin" to reset your questions.';
 
       this.emit(':tellWithCard', speechOutput, cardTitle, cardContent, imageObj);
 
@@ -361,6 +371,11 @@ function getRandomTipWithExclusions(lengthOfArray = 0, arrayOfIndexesToExclude, 
 	}
   return rand;
 }
+
+function numberWithCommas(n) {
+  return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+}
+
 
 function isSlotValid(request, slotName){
         var slot = request.intent.slots[slotName];
