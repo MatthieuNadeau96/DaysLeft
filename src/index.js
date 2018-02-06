@@ -2,8 +2,11 @@
 const Alexa = require("alexa-sdk");
 const APP_ID = 'amzn1.ask.skill.fa9070f2-bc03-4778-9d5d-deb9543c773b'
 var AWS = require('aws-sdk');
-var ua = require('universal-analytics');
+
+var ua = require('universal-analytics'); // Google Analytics
+var Mixpanel = require('mixpanel'); // Mixpanel Analytics
 var googleUA = 'UA-104151044-2'; //tracking ID
+var mixpanel = Mixpanel.init('12230d5b5032c88e48d2497bfbd15101'); // Mixpanel Token
 
 AWS.config.update({
   region: "us-east-1"
@@ -41,6 +44,9 @@ const handlers = {
     var intentTrackingID = ua(googleUA, {https: true});
     // Google Analytics
     intentTrackingID.pageview("/").send();
+    var utteranceValue = "LaunchRequest";
+    var utteranceData = ("intent: " + utteranceValue).toString();
+    mixpanel.track("Successful Launch", {query: utteranceData}); //Mixpanel Launch Success
 
     if(process.env.debugFlag){
       console.log('Launching LaunchRequest...')
@@ -67,9 +73,14 @@ const handlers = {
         cardTitle = 'Welcome back!\n';
         cardContent = 'Years left: ' + average_YearsLeft + '\nDays left: ' + days_Left + '\nHours left: ' + hoursLeft + '\nMinutes left: ' + minutesLeft + '\nSeconds left: ' + secondsLeft + '\n...\nHere is your tip: '+ data['tipSimple'] + '\n...\nIf you enjoyed this skill, please rate it 5 stars in the Alexa skill store!\n.\n All you need to do is: \n1. Go to the "Skills" section on your Alexa app\n 2. Tap "Your Skills" in the top right corner\n3. Find "My Years Left" \n4. Scroll to the bottom and tap "Write a Review"\n5. Show support! \n~\n Enjoy the present moment! :)';
 
+        var utteranceValue = "ComeBack";
+        var utteranceData = ("intent: " + utteranceValue).toString();
+        mixpanel.track("Successful Come Back", {query: utteranceData}); //Mixpanel ComeBack Success
+
         obj.response.cardRenderer(cardTitle, cardContent, imageObj);
         obj.response.speak("Welcome back, you have " + obj.attributes['daysLeft'] + " days left to live." +
           " Here is a tip, to help you live a longer and healthier life. " + data['tip'] + '<break time="1s"/> I added this tip, and more information, on your Alexa skill.<break time=".6s"/>' + " Please don't be afraid to come back for more tips." +  '<break time=".6s"/>Thank you!');
+
         obj.emit(':responseReady');
 
         if(process.env.debugFlag){
@@ -266,11 +277,19 @@ const handlers = {
       this.emit(':responseReady');
     },
     "AMAZON.StopIntent": function() {
+      var utteranceValue = "StopIntent";
+      var utteranceData = ("intent: " + utteranceValue).toString();
+      mixpanel.track("Session Stopped", {query: utteranceData}); // Mixpanel Successful StopIntent
+
       speechOutput = "Stopped";
       this.response.speak(speechOutput);
       this.emit(':responseReady');
     },
     "AMAZON.CancelIntent": function() {
+      var utteranceValue = "CancelIntent";
+      var utteranceData = ("intent: " + utteranceValue).toString();
+      mixpanel.track("Session Cancelled", {query: utteranceData}); //Mixpanel Successful Cancel
+
       speechOutput = "Cancelled";
       this.response.speak(speechOutput);
       this.emit(':responseReady');
@@ -279,6 +298,10 @@ const handlers = {
       console.log("UNHANDLED");
     },
     'SessionEndedRequest': function() {
+      var utteranceValue = "SessionEndedRequest";
+      var utteranceData = ("intent: " + utteranceValue).toString();
+      mixpanel.track("Failed Launch", {query: utteranceData});// Mixpanel Failed Launch
+
       speechOutput = "Session Ended";
       this.response.speak(speechOutput);
       console.log('session ended!');
@@ -316,6 +339,11 @@ function delegateSlotCollection(){
         // return a Dialog.Delegate directive with no updatedIntent property.
         this.emit(":delegate");
       } else {
+        // ANALYTICS ~ reporting a successful test
+        var utteranceValue = "DaysLeftIntent";
+        var utteranceData = ("intent: " + utteranceValue).toString();
+        mixpanel.track("Successful DaysLeft", {query: utteranceData}); // Mixpanel Successful DaysLeft
+
         if(process.env.debugFlag){
           console.log("in completed")
           console.log("returning: "+ JSON.stringify(this.event.request.intent))
